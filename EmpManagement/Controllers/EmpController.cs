@@ -51,13 +51,22 @@ namespace EmpManagement.Controllers
         }
 
         // PUT api/<controller>/5
-        public void Put(int id, [FromBody] string value)
+        public void Put(int id, [FromBody] Employee value)
         {
+            EmpProfile emp = new EmpProfile();
+            emp.EmpCode = value.EmpCode;
+            emp.DateOfBirth = value.DateOfBirth;
+            emp.EmpName = value.EmpName;
+            emp.DeptCode = value.DeptCode;
+            emp.EmpName = value.EmpName;
+            emp.Email = value.Email;
+            log.UpdateEmp(id, emp);
         }
 
         // DELETE api/<controller>/5
         public void Delete(int id)
         {
+            log.DeleteEmp(id);
         }
     }
 }
