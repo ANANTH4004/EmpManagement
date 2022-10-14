@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DAL
 {
-    public class EmpMangementInitalizer : CreateDatabaseIfNotExists<EmpManagementContext>
+    public class EmpMangementInitalizer : DropCreateDatabaseIfModelChanges<EmpManagementContext>
     {
         protected override void Seed(EmpManagementContext context)
         {
