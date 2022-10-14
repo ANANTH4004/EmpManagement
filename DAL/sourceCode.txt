@@ -1,0 +1,316 @@
+﻿
+
+
+			GitHub Link : https://github.com/ANANTH4004/EmpManagement
+
+---------------------- EmpProfile ---------------------------------------------------
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DAL
+{
+    public class EmpProfile
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
+        public int EmpCode { get; set; }
+        [Column(TypeName = "Date")]
+        [DisplayFormat(DataFormatString = "{0:dd-MM-yyyy}",
+               ApplyFormatInEditMode = true)]
+        public DateTime DateOfBirth { get; set; }
+        [Required]
+        [MaxLength(50, ErrorMessage = "Maximum 50 Characters only")]
+        public string EmpName { get; set; }
+        [EmailAddress]
+        public string Email { get; set; }
+        [ForeignKey("DeptMaster")]
+        [Required]
+        public int DeptCode { get; set; }
+        public virtual DeptMaster DeptMaster { get; set; }
+    }
+}
+-----------------------------------------------------------------------------------------------------------
+---------------------------------- DeptMaster -----------------------------------------------------------
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DAL
+{
+    public class DeptMaster
+    {
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
+        [Key]
+        public int DeptCode { get; set; }
+        [MaxLength(50,ErrorMessage ="Maximum 50 Characters only")]
+        public string DeptName { get; set; }
+        public virtual ICollection<EmpProfile> EmpProfiles { get; set; }
+    }
+}
+------------------------------------------------------------------------------------------------------------
+
+---------------------------- Context ---------------------------------------------------------------------
+using System;
+using System.Collections.Generic;
+using System.Data.Entity;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DAL
+{
+    public class EmpManagementContext : DbContext
+    {
+        public EmpManagementContext() : base("EmpManagement")
+        {
+            Database.SetInitializer(new EmpMangementInitalizer());
+        }
+        public virtual DbSet<EmpProfile> EmpProfiles { get; set; }
+        public virtual DbSet<DeptMaster> DeptMasters { get; set; }
+
+    }
+}
+------------------------------------------------------------------------------------------------------------
+using System;
+using System.Collections.Generic;
+using System.Data.Entity;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DAL
+{
+    public class EmpMangementInitalizer : DropCreateDatabaseIfModelChanges<EmpManagementContext>
+    {
+        protected override void Seed(EmpManagementContext context)
+        {
+            List<DeptMaster> deptMasterList = new List<DeptMaster>();   
+            deptMasterList.Add(new DeptMaster() { DeptCode=10,DeptName="Production"});
+            deptMasterList.Add(new DeptMaster() { DeptCode = 20, DeptName = "Marketing" });
+            context.DeptMasters.AddRange(deptMasterList);
+            List<EmpProfile> empProfileList = new List<EmpProfile>();
+            empProfileList.Add(new EmpProfile() { DeptCode = 10, EmpName = "Anand" , DateOfBirth= new DateTime(2001,05,11),Email="anandabus11@gmail.com",EmpCode=4004 });
+            empProfileList.Add(new EmpProfile() { DeptCode = 20, EmpName = "Varun" , DateOfBirth= new DateTime(2001,05,11),Email="varunkrish@gmail.com",EmpCode=4001 });
+            context.EmpProfiles.AddRange(empProfileList);
+            context.SaveChanges();
+            base.Seed(context);
+        }
+    }
+}
+-----------------------------------------------------------------------------------------------------------
+
+                            Operations class
+using System;
+using System.CodeDom;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DAL
+{
+    public class EmpOperations
+    {
+        EmpManagementContext context = null;
+
+        public EmpOperations()
+        {
+            context = new EmpManagementContext();
+        }
+        public List<EmpProfile> GetAllEmp()
+        {
+            var ans = context.EmpProfiles.ToList();
+            return ans;
+        }
+        public void AddEmp(EmpProfile emp)
+        {
+            context.EmpProfiles.Add(emp);
+            context.SaveChanges();
+        }
+        public void EditEmp(int id, EmpProfile emp)
+        {
+            var ans = context.EmpProfiles.ToList().Find(temp => temp.EmpCode == id);
+            context.EmpProfiles.Remove(ans);
+            context.EmpProfiles.Add(emp);
+            context.SaveChanges();
+        }
+        public void RemoveEmp(int id)
+        {
+            var ans = context.EmpProfiles.ToList().Find(temp => temp.EmpCode == id);
+            context.EmpProfiles.Remove(ans);
+            context.SaveChanges();
+        }
+        public List<DeptMaster> GetAllDept()
+        {
+            return context.DeptMasters.ToList();
+        }
+        public void AddDept(DeptMaster m)
+        {
+            context.DeptMasters.Add(m);
+            context.SaveChanges();
+        }
+        public void EditDept(int id , DeptMaster dept)
+        {
+            var ans = context.DeptMasters.ToList().Find(temp=>temp.DeptCode == id);
+            context.DeptMasters.Remove(ans);
+            context.DeptMasters.Add(dept);
+            context.SaveChanges();
+        }
+        public void RemoveDept(int id)
+        {
+            var ans = context.DeptMasters.ToList().Find(temp => temp.DeptCode == id);
+            context.DeptMasters.Remove(ans);
+            context.SaveChanges();
+        }
+    }
+}
+-------------------------------------------------------------------------------------------------------------
+
+                        Controllers Code
+
+------------------------------------------ Dept Controller -------------------------------------------------
+using BLL;
+using DAL;
+using EmpManagement.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Web.Http;
+
+namespace EmpManagement.Controllers
+{
+    public class DeptController : ApiController
+    {
+        logic log;
+        // GET api/<controller>
+        public DeptController()
+        {
+            log = new logic();   
+        }
+        public List<Dept> Get()
+        {
+            var ans = log.ShowAllDept();
+            List<Dept> deptlist = new List<Dept>();
+            foreach (var item in ans)
+            {
+                deptlist.Add( new Dept() { DeptCode = item.DeptCode,DeptName=item.DeptName });
+            }
+            return deptlist;
+        }
+
+        // GET api/<controller>/5
+        public string Get(int id)
+        {
+            return "value";
+        }
+
+        // POST api/<controller>
+        public void Post([FromBody] Dept value)
+        {
+            DeptMaster dept = new DeptMaster();
+            dept.DeptCode = value.DeptCode; ;
+            dept.DeptName = value.DeptName;
+            log.InserDept(dept);
+        }
+
+        // PUT api/<controller>/5
+        public void Put(int id, [FromBody] Dept value)
+        {
+            DeptMaster dept = new DeptMaster();
+            dept.DeptCode = value.DeptCode; ;
+            dept.DeptName = value.DeptName;
+            log.UpdateDept(id, dept);
+        }
+
+        // DELETE api/<controller>/5
+        public void Delete(int id)
+        {
+            log.DeleteDept(id);
+        }
+    }
+}---------------------------------------------------------------------------------------------------------
+
+------------------------------- Emp Controller -----------------------------------------------------------
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Web.Http;
+using System.Web.UI.WebControls;
+using BLL;
+using DAL;
+using EmpManagement.Models;
+
+namespace EmpManagement.Controllers
+{
+    public class EmpController : ApiController
+    {
+        logic log;
+        public EmpController()
+        {
+            log = new logic();
+        }
+        // GET api/<controller>
+        public List<Employee> Get()
+        {
+           var ans = log.ShowAllEmp();
+            List<Employee> emplist = new List<Employee>();
+            foreach (var item in ans)
+            {
+                emplist.Add(new Employee() { EmpName = item.EmpName, DeptCode = item.DeptCode, DateOfBirth = item.DateOfBirth, Email = item.Email, EmpCode = item.EmpCode });
+            }
+            return emplist;
+        }
+
+        // GET api/<controller>/5
+        public string Get(int id)
+        {
+            return "value";
+        }
+
+        // POST api/<controller>
+        public void Post([FromBody] Employee value)
+        {
+            EmpProfile emp = new EmpProfile();
+            emp.EmpCode = value.EmpCode;
+            emp.DateOfBirth = value.DateOfBirth;
+            emp.EmpName = value.EmpName; 
+            emp.DeptCode = value.DeptCode;
+            emp.EmpName=value.EmpName;
+            emp.Email = value.Email;
+           
+            log.InsertEmp(emp);
+        }
+
+        // PUT api/<controller>/5
+        public void Put(int id, [FromBody] Employee value)
+        {
+            EmpProfile emp = new EmpProfile();
+            emp.EmpCode = value.EmpCode;
+            emp.DateOfBirth = value.DateOfBirth;
+            emp.EmpName = value.EmpName;
+            emp.DeptCode = value.DeptCode;
+            emp.EmpName = value.EmpName;
+            emp.Email = value.Email;
+            log.UpdateEmp(id, emp);
+        }
+
+        // DELETE api/<controller>/5
+        public void Delete(int id)
+        {
+            log.DeleteEmp(id);
+        }
+    }
+}--------------------------------------------------------------------------------------------------------------
